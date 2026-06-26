@@ -1,65 +1,121 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
+
+function HomeForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [name, setName] = useState('');
+  const [roomCode, setRoomCode] = useState('');
+  const [tab, setTab] = useState<'create' | 'join'>('create');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('bingoPlayerName');
+    if (saved) setName(saved);
+    const room = searchParams.get('room');
+    if (room) {
+      setRoomCode(room.toUpperCase());
+      setTab('join');
+    }
+  }, [searchParams]);
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) { setError('Enter your name'); return; }
+    localStorage.setItem('bingoPlayerName', name.trim());
+    sessionStorage.setItem('playerName', name.trim());
+    sessionStorage.setItem('isHost', 'true');
+    router.push(`/room/${uuidv4().slice(0, 6).toUpperCase()}`);
+  }
+
+  function handleJoin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) { setError('Enter your name'); return; }
+    if (!roomCode.trim()) { setError('Enter a room code'); return; }
+    localStorage.setItem('bingoPlayerName', name.trim());
+    sessionStorage.setItem('playerName', name.trim());
+    sessionStorage.setItem('isHost', 'false');
+    router.push(`/room/${roomCode.trim().toUpperCase()}`);
+  }
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-2">🎱</div>
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+            BINGO!
+          </h1>
+          <p className="text-gray-500 mt-1">Multiplayer fun across the internet</p>
+        </div>
+
+        <div className="flex rounded-2xl bg-gray-100 p-1 mb-6">
+          {(['create', 'join'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => { setTab(t); setError(''); }}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                tab === t
+                  ? 'bg-white shadow text-purple-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t === 'create' ? '✨ Create Room' : '🚪 Join Room'}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={tab === 'create' ? handleCreate : handleJoin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => { setName(e.target.value); setError(''); }}
+              placeholder="Enter your name..."
+              maxLength={20}
+              autoFocus={tab === 'join'}
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-gray-800 font-medium transition-colors"
+            />
+          </div>
+
+          {tab === 'join' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Room Code</label>
+              <input
+                type="text"
+                value={roomCode}
+                onChange={e => { setRoomCode(e.target.value.toUpperCase()); setError(''); }}
+                placeholder="e.g. A3F2B1"
+                maxLength={6}
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-gray-800 font-bold text-center text-xl tracking-widest uppercase transition-colors"
+              />
+            </div>
+          )}
+
+          {error && (
+            <p className="text-red-500 text-sm font-medium text-center">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            {tab === 'create' ? '🎉 Create Game' : '🎮 Join Game'}
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Suspense>
+      <HomeForm />
+    </Suspense>
   );
 }
